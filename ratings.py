@@ -21,7 +21,7 @@ finnhubCfg.read(script_path + "/finnhub.cfg")
 token = finnhubCfg.get("Settings", "token")
 
 # define the logging
-logging.basicConfig(filename=script_path + '/ratings.log', level=logging.DEBUG,
+logging.basicConfig(filename=script_path + '/ratings.log', level=logging.WARN,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 # set variables
