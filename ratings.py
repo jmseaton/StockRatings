@@ -19,6 +19,7 @@ script_path = os.path.abspath(pathname)
 finnhubCfg = configparser.RawConfigParser()
 finnhubCfg.read(script_path + "/finnhub.cfg")
 token = finnhubCfg.get("Settings", "token")
+powerbi_url = finnhubCfg.get("Settings", "powerbi_url")
 
 # define the logging
 logging.basicConfig(filename=script_path + '/ratings.log', level=logging.WARN,
@@ -30,9 +31,6 @@ yesterday = today - timedelta(days=1)
 endpoint = 'upgrade-downgrade'
 updown_url = 'https://finnhub.io/api/v1/stock/upgrade-downgrade?' + '&token=' + token
 targets_url = 'https://finnhub.io/api/v1/stock/price-target?' + '&token=' + token + '&symbol='
-powerbi_url = 'https://api.powerbi.com/beta/b67d722d-aa8a-4777-a169-ebeb7a6a3b67/datasets/' \
-              '520ae51f-637f-4efd-96be-dad192e05be4/rows?key=xOihNIQCsJUKPN0QCs93Ni3JCw0UL' \
-              'xfuul7LXbsyqDrprXUnu6NFehkGrhbxvnfxt9SZs3lQDqLdQjBstxp13g%3D%3D'
 
 
 def submit_metrics():
@@ -84,7 +82,6 @@ def submit_metrics():
 
         # we only want the latest data, so check gradeTime vs "yesterday"
         if datetime.fromtimestamp(rating["gradeTime"]).date() > yesterday:
-
             # pull target price data for each symbol
             targets_url = 'https://finnhub.io/api/v1/stock/price-target?' + '&token=' + token + '&symbol=' + symbol
             stock_targets_get = requests.get(targets_url, verify=True)
@@ -98,17 +95,15 @@ def submit_metrics():
             stock_targets = stock_targets_get.json()
             stock_price = stock_price_get.json()
 
-            stock_data_string = [{"toGrade": toGrade, "gradeTime": str(date), "symbol": symbol, "company": company1,
-                                  "fromGrade": fromGrade, "action": action, "targetHigh": stock_targets["targetHigh"],
-                                  "targetLow": stock_targets["targetLow"], "targetMean": stock_targets["targetMean"],
-                                  "targetMedian": stock_targets["targetMedian"], "currentPrice": stock_price["c"]}]
+            stock_data = [{"toGrade": toGrade, "gradeTime": str(date), "symbol": symbol, "company": company1,
+                           "fromGrade": fromGrade, "action": action, "targetHigh": stock_targets["targetHigh"],
+                           "targetLow": stock_targets["targetLow"], "targetMean": stock_targets["targetMean"],
+                           "targetMedian": stock_targets["targetMedian"], "currentPrice": stock_price["c"]}]
 
-            # convert to json
-            stock_data_json = json.dumps(stock_data_string)
-            logging.debug("stock data:" + stock_data_string)
+            logging.debug("stock data:" + stock_data)
 
             # send metrics to powerbi
-            powerbi_push = requests.post(powerbi_url, json=stock_data_string)
+            powerbi_push = requests.post(powerbi_url, json=stock_data)
             logging.debug("powerbi return code:" + str(powerbi_push.status_code))
             logging.debug("powerbi response:" + powerbi_push.content)
 
